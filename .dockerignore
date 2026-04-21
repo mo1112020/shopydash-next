@@ -1,0 +1,8 @@
+.next
+node_modules
+.git
+.env*.local
+*.md
+.vercel
+.vscode
+supabase/

@@ -1,0 +1,511 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+   :root {
+    /* Marketplace Vibrant Theme - Fresh & Trustworthy */
+    --background: 0 0% 98%;
+    --foreground: 220 20% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 15%;
+
+    /* Primary - Rich Teal (Trust & Freshness) */
+    --primary: 168 76% 36%;
+    --primary-dark: 168 76% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Warm Orange (Energy & Action) */
+    --secondary: 24 95% 53%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 45%;
+
+    /* Accent - Soft Gray (Used for hovers) */
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 20% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 168 76% 36%;
+
+    --radius: 0.75rem;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  }
+
+  .dark {
+    --background: 220 20% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 220 20% 13%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 220 20% 13%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 168 76% 42%;
+    --primary-dark: 168 76% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 24 95% 58%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 220 15% 25%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 199 89% 55%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 168 76% 42%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    direction: rtl;
+    font-family: var(--font-cairo), var(--font-tajawal), "Cairo", "Tajawal", sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss02";
+  }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+
+  /* Arabic numerals option */
+  .arabic-nums {
+    font-feature-settings: "locl";
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Selection color */
+  ::selection {
+    @apply bg-primary/20 text-foreground;
+  }
+}
+
+@layer components {
+  /* Container utilities */
+  .container-app {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Card variants */
+  .card-elevated {
+    @apply bg-card rounded-lg border shadow-card transition-all duration-300 hover:shadow-card-hover;
+  }
+
+  .card-interactive {
+    @apply card-elevated cursor-pointer hover:-translate-y-1;
+  }
+
+  /* Button glow effect */
+  .btn-glow {
+    @apply relative overflow-hidden;
+  }
+
+  .btn-glow::after {
+    content: "";
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-md border border-border/50;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-muted animate-pulse rounded;
+  }
+
+  /* Status badge variants */
+  .status-placed {
+    @apply bg-info/10 text-info border-info/20;
+  }
+
+  .status-confirmed {
+    @apply bg-primary/10 text-primary border-primary/20;
+  }
+
+  .status-preparing {
+    @apply bg-warning/10 text-warning border-warning/20;
+  }
+
+  .status-out-for-delivery {
+    @apply bg-info/10 text-info border-info/20;
+  }
+
+  .status-delivered {
+    @apply bg-success/10 text-success border-success/20;
+  }
+
+  .status-cancelled {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+
+  /* Category card */
+  .category-card {
+    @apply relative overflow-hidden rounded-xl p-6 transition-all duration-300 hover:scale-105;
+    @apply bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/10;
+  }
+
+  /* Product card */
+  .product-card {
+    @apply card-interactive overflow-hidden;
+  }
+
+  .product-card .product-image {
+    @apply aspect-square w-full object-cover transition-transform duration-500;
+  }
+
+  .product-card:hover .product-image {
+    @apply scale-110;
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply relative px-4 py-2 text-muted-foreground transition-colors hover:text-foreground;
+  }
+
+  .nav-link.active {
+    @apply text-primary font-medium;
+  }
+
+  .nav-link.active::after {
+    content: "";
+    @apply absolute bottom-0 right-0 left-0 h-0.5 bg-primary rounded-full;
+  }
+
+  /* Input focus ring */
+  .input-focus {
+    @apply focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all;
+  }
+
+  /* Timeline for order tracking */
+  .timeline-item {
+    @apply relative flex gap-4 pb-8 last:pb-0;
+  }
+
+  .timeline-item::before {
+    content: "";
+    @apply absolute top-8 right-[18px] w-0.5 h-full bg-border;
+  }
+
+  .timeline-item:last-child::before {
+    @apply hidden;
+  }
+
+  .timeline-dot {
+    @apply relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-background;
+  }
+
+  .timeline-dot.active {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
+
+  .timeline-dot.completed {
+    @apply border-success bg-success text-success-foreground;
+  }
+
+  /* Mobile cart bar */
+  .cart-bar {
+    @apply fixed bottom-0 left-0 right-0 z-50 glass border-t p-4;
+    @apply transform transition-transform duration-300;
+  }
+
+  .cart-bar.hidden {
+    @apply translate-y-full;
+  }
+
+  /* Page header */
+  .page-header {
+    @apply bg-gradient-hero py-8 md:py-12 mb-8;
+  }
+
+  /* Empty state */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+
+  .empty-state-icon {
+    @apply w-24 h-24 mb-6 text-muted-foreground/50;
+  }
+
+  /* Badge variants */
+  .badge-category {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium;
+    @apply bg-primary/10 text-primary;
+  }
+
+  /* Price display */
+  .price {
+    @apply font-bold text-primary;
+  }
+
+  .price-original {
+    @apply text-muted-foreground line-through text-sm;
+  }
+
+  /* Shop card */
+  .shop-card {
+    @apply card-interactive p-4;
+  }
+
+  .shop-avatar {
+    @apply w-16 h-16 rounded-full border-2 border-primary/20 object-cover;
+  }
+
+  /* Dashboard stat card */
+  .stat-card {
+    @apply card-elevated p-6;
+  }
+
+  .stat-value {
+    @apply text-3xl font-bold text-foreground;
+  }
+
+  .stat-label {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .stat-trend {
+    @apply inline-flex items-center gap-1 text-sm font-medium;
+  }
+
+  .stat-trend.up {
+    @apply text-success;
+  }
+
+  .stat-trend.down {
+    @apply text-destructive;
+  }
+}
+
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Animation delays */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 3px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+  }
+
+  /* Hide scrollbar utility */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Fade in animation */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Seamless infinite marquee */
+  @keyframes marquee-scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Map Boundary Mask */
+  .boundary-mask {
+    pointer-events: none !important;
+    cursor: default !important;
+  }
+}
+
+/* ===== Ocean Wave Divider ===== */
+.ocean-waves {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 80px;
+  overflow: hidden;
+  z-index: 5;
+  pointer-events: none;
+  direction: ltr; /* prevent RTL flip */
+}
+
+@media (min-width: 768px) {
+  .ocean-waves {
+    height: 120px;
+  }
+}
+
+.ocean-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  display: block;
+}
+
+/* Back layer — warm peach, slow sway */
+.ocean-wave--back {
+  fill: rgba(255, 200, 170, 0.3);
+  animation: ocean-sway 12s ease-in-out infinite alternate;
+}
+
+/* Mid layer — teal mist, mid speed opposite */
+.ocean-wave--mid {
+  fill: rgba(16, 185, 129, 0.07);
+  animation: ocean-sway-reverse 8s ease-in-out infinite alternate;
+}
+
+/* Front layer — matches next section bg for seamless blend */
+.ocean-wave--front {
+  fill: hsl(var(--background));
+  animation: ocean-sway 6s ease-in-out infinite alternate;
+}
+
+@keyframes ocean-sway {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes ocean-sway-reverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes shiny-text-move {
+  from { background-position: 150% center; }
+  to   { background-position: -50% center; }
+}

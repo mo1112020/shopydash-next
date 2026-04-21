@@ -1,0 +1,54 @@
+name: Lighthouse CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Start preview server
+        run: npm run preview -- --host 127.0.0.1 --port 4173 > server.log 2>&1 &
+        env:
+          NODE_ENV: production
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Wait for server to start
+        run: npx wait-on http://127.0.0.1:4173 -t 60000
+
+      - name: Debug server output
+        if: always()
+        run: cat server.log || echo "server.log not found"
+
+      - name: Install Lighthouse and Puppeteer
+        run: npm install -g @lhci/cli@0.13.0 && npm install puppeteer --no-save
+
+      - name: Run Lighthouse CI
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('puppeteer').executablePath())")
+          lhci autorun --chrome-flags="--no-sandbox --disable-setuid-sandbox --disable-gpu --headless=new --single-process"
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "false"

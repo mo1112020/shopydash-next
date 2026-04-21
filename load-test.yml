@@ -1,0 +1,28 @@
+config:
+  target: "https://oxaepmflhjtiifwdjgdc.supabase.co"
+  phases:
+    - duration: 20
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp up load (10 to 50 requests per second)"
+    - duration: 30
+      arrivalRate: 50
+      name: "Sustained load (50 requests per second)"
+scenarios:
+  - name: "User Browsing Flow"
+    flow:
+      - get:
+          url: "/rest/v1/shops?select=*"
+          headers:
+            apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YWVwbWZsaGp0aWlmd2RqZ2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMDM0MjUsImV4cCI6MjA4NDY3OTQyNX0.fwu-1yupHNa-UHJsBTQSou09z9kJMKXa6NL9GlGw11U"
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YWVwbWZsaGp0aWlmd2RqZ2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMDM0MjUsImV4cCI6MjA4NDY3OTQyNX0.fwu-1yupHNa-UHJsBTQSou09z9kJMKXa6NL9GlGw11U"
+      - get:
+          url: "/rest/v1/products?select=id,name,price,shop_id&limit=20"
+          headers:
+            apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YWVwbWZsaGp0aWlmd2RqZ2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMDM0MjUsImV4cCI6MjA4NDY3OTQyNX0.fwu-1yupHNa-UHJsBTQSou09z9kJMKXa6NL9GlGw11U"
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YWVwbWZsaGp0aWlmd2RqZ2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMDM0MjUsImV4cCI6MjA4NDY3OTQyNX0.fwu-1yupHNa-UHJsBTQSou09z9kJMKXa6NL9GlGw11U"
+      - get:
+          url: "/rest/v1/categories?select=*"
+          headers:
+            apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YWVwbWZsaGp0aWlmd2RqZ2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMDM0MjUsImV4cCI6MjA4NDY3OTQyNX0.fwu-1yupHNa-UHJsBTQSou09z9kJMKXa6NL9GlGw11U"
+            Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94YWVwbWZsaGp0aWlmd2RqZ2RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMDM0MjUsImV4cCI6MjA4NDY3OTQyNX0.fwu-1yupHNa-UHJsBTQSou09z9kJMKXa6NL9GlGw11U"
