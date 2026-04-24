@@ -27,7 +27,6 @@ import { formatPrice } from "@/lib/utils";
 import { ShopProductCard } from "@/components/ShopProductCard";
 import { Input } from "@/components/ui/input";
 import { shopsService, productsService } from "@/services";
-import { SEO } from "@/components/SEO";
 
 
 
@@ -204,12 +203,6 @@ export default function ShopPage() {
 
   return (
     <div className="min-h-screen" dir="rtl">
-      <SEO 
-        title={shop.name} 
-        description={shop.description || `تسوق من ${shop.name} عبر شوبي داش`} 
-        image={shop.cover_url || shop.logo_url || "https://shopydash.store/logo.png"} 
-        url={`https://shopydash.store/shops/${shop.slug}`} 
-      />
       {/* Cover Hero Section */}
       <div className="relative mb-8 md:mb-12">
         <div className="relative h-32 md:h-48 bg-gradient-to-br from-primary/10 to-secondary/10 overflow-hidden rounded-b-3xl">

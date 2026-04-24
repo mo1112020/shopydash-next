@@ -24,7 +24,6 @@ import { formatPrice } from "@/lib/utils";
 import { productsService } from "@/services";
 import { useCart, useAuth } from "@/store";
 import { SimilarProducts } from "@/components/SimilarProducts";
-import { SEO } from "@/components/SEO";
 
 // ... types and imports
 import { getShopOpenState } from "@/lib/shop-helpers";
@@ -133,12 +132,6 @@ export default function ProductPage() {
 
   return (
     <div className="pt-4 pb-28 md:py-8">
-      <SEO 
-        title={`${product.name} | ${product.shop?.name}`} 
-        description={product.description || `اشتري ${product.name} من ${product.shop?.name} الآن عبر شوبي داش`} 
-        image={product.image_url || "https://shopydash.store/logo.png"} 
-        url={`https://shopydash.store/products/${product.id}`} 
-      />
       <div className="container-app">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
