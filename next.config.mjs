@@ -2,6 +2,7 @@
 const nextConfig = {
   output: "standalone",
   compress: true,
+  poweredByHeader: false,
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days
@@ -13,6 +14,37 @@ const nextConfig = {
         hostname: "**.supabase.co",
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/favicon(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400",
+          },
+        ],
+      },
+      {
+        source: "/:all*(svg|jpg|jpeg|png|gif|ico|webp|avif)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+    ];
   },
   experimental: {
     optimizePackageImports: [

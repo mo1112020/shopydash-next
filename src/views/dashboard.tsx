@@ -51,10 +51,6 @@ import {
 import { SoundService } from "@/services/sound.service";
 import { useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { AdminDelivery } from "@/components/delivery/AdminDelivery";
-import { DeliveryDashboard } from "@/components/delivery/DeliveryDashboard";
-import { CourierAccount } from "@/components/delivery/CourierAccount";
-import { ShopAnalytics } from "./dashboard/shop-analytics";
 import { AdminCategories } from "@/components/dashboard/AdminCategories";
 import { cn } from "@/lib/utils";
 import { ShopOrders } from "@/components/dashboard/ShopOrders";
@@ -101,6 +97,46 @@ import {
 const RegionMapDrawer = dynamic(
   () => import("@/components/dashboard/RegionMapDrawer"),
   { ssr: false, loading: () => <div className="h-full w-full bg-muted animate-pulse rounded-lg" /> }
+);
+
+const AdminDelivery = dynamic(
+  () => import("@/components/delivery/AdminDelivery").then((m) => m.AdminDelivery),
+  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
+);
+
+const DeliveryDashboard = dynamic(
+  () => import("@/components/delivery/DeliveryDashboard").then((m) => m.DeliveryDashboard),
+  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
+);
+
+const CourierAccount = dynamic(
+  () => import("@/components/delivery/CourierAccount").then((m) => m.CourierAccount),
+  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
+);
+
+const ShopAnalytics = dynamic(
+  () => import("./dashboard/shop-analytics").then((m) => m.ShopAnalytics),
+  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
+);
+
+const AdminFinancials = dynamic(
+  () => import("@/components/dashboard/AdminFinancials").then((m) => m.AdminFinancials),
+  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
+);
+
+const AdminShopFinancials = dynamic(
+  () => import("@/components/dashboard/AdminShopFinancials").then((m) => m.AdminShopFinancials),
+  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
+);
+
+const LiveOperations = dynamic(
+  () => import("@/components/dashboard/LiveOperations").then((m) => m.LiveOperations),
+  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
+);
+
+const TopCustomers = dynamic(
+  () => import("@/components/dashboard/TopCustomers").then((m) => m.TopCustomers),
+  { ssr: false, loading: () => <div className="h-64 bg-muted animate-pulse rounded-lg" /> }
 );
 import {
   Tabs,
@@ -159,10 +195,6 @@ import {
   Pie,
   Cell
 } from "recharts";
-import { AdminFinancials } from "@/components/dashboard/AdminFinancials";
-import { AdminShopFinancials } from "@/components/dashboard/AdminShopFinancials";
-import { LiveOperations } from "@/components/dashboard/LiveOperations";
-import { TopCustomers } from "@/components/dashboard/TopCustomers";
 import type {
   Product,
   Category,

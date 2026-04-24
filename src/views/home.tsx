@@ -248,7 +248,7 @@ export default function HomePage() {
                     ))
                   : shops && shops.length > 0 ? (
                       shops.slice(0, 3).map((shop: any, i: number) => (
-                        <ShopCard key={shop.id} shop={shop} index={i} />
+                        <ShopCard key={shop.id} shop={shop} index={i} priority={i === 0} />
                       ))
                     ) : null}
               </div>
