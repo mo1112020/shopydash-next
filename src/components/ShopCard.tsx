@@ -11,15 +11,16 @@ import ShinyText from "./animations/ShinyText";
 import SpotlightCard from "./animations/SpotlightCard";
 
 interface ShopCardProps {
-  shop: Shop & { 
+  shop: Shop & {
     category?: { name: string; icon: string | null } | null;
-    working_hours?: WorkingHours[]; 
+    working_hours?: WorkingHours[];
   };
-  className?: string; // Allow external class overrides
-  index?: number; // For animation delay
+  className?: string;
+  index?: number;
+  priority?: boolean;
 }
 
-export function ShopCard({ shop, className, index = 0 }: ShopCardProps) {
+export function ShopCard({ shop, className, index = 0, priority = false }: ShopCardProps) {
   const { isOpen } = getShopOpenState(
     shop, 
     shop.working_hours || []
@@ -100,6 +101,7 @@ export function ShopCard({ shop, className, index = 0 }: ShopCardProps) {
               width={80}
               height={80}
               className="w-full h-full object-cover"
+              priority={priority}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">

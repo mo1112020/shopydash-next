@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 const CRAWLER_AGENTS = [
   "facebookexternalhit",
@@ -26,12 +26,7 @@ function esc(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
-function ogHTML(
-  title: string,
-  description: string,
-  image: string,
-  url: string
-): string {
+function ogHTML(title: string, description: string, image: string, url: string): string {
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -55,83 +50,97 @@ function ogHTML(
 }
 
 export async function middleware(request: NextRequest) {
-  const ua = request.headers.get("user-agent");
+  // Always refresh the auth session so server components can read it
+  let supabaseResponse = NextResponse.next({ request });
 
-  if (!isCrawler(ua)) {
-    return NextResponse.next();
-  }
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
 
-  const path = request.nextUrl.pathname;
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return NextResponse.next();
-  }
-
+  // Refresh session — do NOT remove this line
   try {
-    const shopMatch = path.match(/^\/shops\/([^/]+)$/);
-    if (shopMatch) {
-      const slug = shopMatch[1];
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/shops?slug=eq.${slug}&select=name,description,logo_url,cover_url&limit=1`,
-        {
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-        }
-      );
-      const shops = await res.json();
-      if (shops && shops.length > 0) {
-        const shop = shops[0];
-        const title = esc(`${shop.name} | Shopydash`);
-        const desc = esc(shop.description || `تسوق من ${shop.name} عبر شوبي داش`);
-        const image =
-          shop.logo_url || shop.cover_url || "https://www.shopydash.store/logo.png";
-        const pageUrl = `https://www.shopydash.store/shops/${slug}`;
-        return new NextResponse(ogHTML(title, desc, image, pageUrl), {
-          status: 200,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        });
-      }
-    }
-
-    const productMatch = path.match(/^\/products\/([^/]+)$/);
-    if (productMatch) {
-      const id = productMatch[1];
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/products?id=eq.${id}&select=name,description,image_url,shop:shops(name)&limit=1`,
-        {
-          headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          },
-        }
-      );
-      const products = await res.json();
-      if (products && products.length > 0) {
-        const p = products[0];
-        const shopName = p.shop?.name || "Shopydash";
-        const title = esc(`${p.name} | ${shopName}`);
-        const desc = esc(
-          p.description || `اشتري ${p.name} من ${shopName} الآن عبر شوبي داش`
-        );
-        const image = p.image_url || "https://www.shopydash.store/logo.png";
-        const pageUrl = `https://www.shopydash.store/products/${id}`;
-        return new NextResponse(ogHTML(title, desc, image, pageUrl), {
-          status: 200,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        });
-      }
-    }
+    await supabase.auth.getUser();
   } catch {
-    // fall through to normal rendering
+    // non-fatal: server still serves pages without auth context
   }
 
-  return NextResponse.next();
+  // Social crawler: serve OG HTML directly
+  const ua = request.headers.get("user-agent");
+  if (isCrawler(ua)) {
+    const path = request.nextUrl.pathname;
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      try {
+        const shopMatch = path.match(/^\/shops\/([^/]+)$/);
+        if (shopMatch) {
+          const slug = shopMatch[1];
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/shops?slug=eq.${slug}&select=name,description,logo_url,cover_url&limit=1`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          );
+          const shops = await res.json();
+          if (shops?.length > 0) {
+            const shop = shops[0];
+            const title = esc(`${shop.name} | Shopydash`);
+            const desc = esc(shop.description || `تسوق من ${shop.name} عبر شوبي داش`);
+            const image = shop.logo_url || shop.cover_url || "https://www.shopydash.store/logo.png";
+            return new NextResponse(ogHTML(title, desc, image, `https://www.shopydash.store/shops/${slug}`), {
+              status: 200,
+              headers: { "Content-Type": "text/html; charset=utf-8" },
+            });
+          }
+        }
+
+        const productMatch = path.match(/^\/products\/([^/]+)$/);
+        if (productMatch) {
+          const id = productMatch[1];
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/products?id=eq.${id}&select=name,description,image_url,shop:shops(name)&limit=1`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+          );
+          const products = await res.json();
+          if (products?.length > 0) {
+            const p = products[0];
+            const shopName = p.shop?.name || "Shopydash";
+            const title = esc(`${p.name} | ${shopName}`);
+            const desc = esc(p.description || `اشتري ${p.name} من ${shopName} الآن عبر شوبي داش`);
+            const image = p.image_url || "https://www.shopydash.store/logo.png";
+            return new NextResponse(ogHTML(title, desc, image, `https://www.shopydash.store/products/${id}`), {
+              status: 200,
+              headers: { "Content-Type": "text/html; charset=utf-8" },
+            });
+          }
+        }
+      } catch {
+        // fall through to normal rendering
+      }
+    }
+  }
+
+  return supabaseResponse;
 }
 
 export const config = {
-  matcher: ["/shops/:slug*", "/products/:id*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

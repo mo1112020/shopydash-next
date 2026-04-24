@@ -63,7 +63,7 @@ export const categoriesService = {
   ): Promise<Category> {
     const { data, error } = await supabase
       .from("categories")
-      .insert(category)
+      .insert(category as any)
       .select()
       .single();
 
@@ -74,7 +74,7 @@ export const categoriesService = {
   async update(id: string, updates: Partial<Category>): Promise<Category> {
     const { data, error } = await supabase
       .from("categories")
-      .update(updates)
+      .update(updates as any)
       .eq("id", id)
       .select()
       .single();
@@ -322,7 +322,7 @@ export const shopsService = {
       .eq("is_active", true);
 
     if (options?.premiumOnly) {
-      query = query.eq("is_premium_active", true);
+      query = (query as any).eq("is_premium_active", true);
     }
 
     if (options?.regionId) {
@@ -554,7 +554,7 @@ export const regionsService = {
   },
 
   async update(id: string, updates: Partial<Region>): Promise<Region> {
-    const { data, error } = await supabase.from("regions").update(updates).eq("id", id).select().single();
+    const { data, error } = await supabase.from("regions").update(updates as any).eq("id", id).select().single();
     if (error) throw error;
     return data;
   },

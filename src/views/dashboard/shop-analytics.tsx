@@ -2,23 +2,24 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  ArrowRight, 
-  Store, 
-  DollarSign, 
-  ShoppingCart, 
+import {
+  ArrowRight,
+  Store,
+  DollarSign,
+  ShoppingCart,
   TrendingUp,
   BarChart2,
 } from "lucide-react";
-import { 
-  BarChart, 
-  Bar, 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,7 +78,7 @@ export function ShopAnalytics({ shopId }: { shopId: string }) {
   if (loading) {
     return (
       <div className="space-y-4">
-        {[1,2,3].map(i => <div key={i} className="h-24 rounded-xl bg-muted/40 animate-pulse" />)}
+        {[1, 2, 3].map(i => <div key={i} className="h-24 rounded-xl bg-muted/40 animate-pulse" />)}
       </div>
     );
   }
@@ -137,9 +138,9 @@ export function ShopAnalytics({ shopId }: { shopId: string }) {
           {/* KPI cards */}
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              { icon: <DollarSign className="w-5 h-5 text-green-600"/>, bg: "bg-green-100", label: "إجمالي المبيعات", value: formatPrice(totalRevenue), sub: `خلال ${period} يوم` },
-              { icon: <ShoppingCart className="w-5 h-5 text-primary"/>, bg: "bg-primary/10", label: "عدد الطلبات", value: String(totalOrders), sub: `خلال ${period} يوم` },
-              { icon: <TrendingUp className="w-5 h-5 text-amber-600"/>, bg: "bg-amber-100", label: "متوسط قيمة الطلب", value: formatPrice(avgOrderValue), sub: "معدل السلة" },
+              { icon: <DollarSign className="w-5 h-5 text-green-600" />, bg: "bg-green-100", label: "إجمالي المبيعات", value: formatPrice(totalRevenue), sub: `خلال ${period} يوم` },
+              { icon: <ShoppingCart className="w-5 h-5 text-primary" />, bg: "bg-primary/10", label: "عدد الطلبات", value: String(totalOrders), sub: `خلال ${period} يوم` },
+              { icon: <TrendingUp className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100", label: "متوسط قيمة الطلب", value: formatPrice(avgOrderValue), sub: "معدل السلة" },
             ].map(kpi => (
               <Card key={kpi.label} className="border-muted">
                 <CardContent className="pt-5 pb-4">

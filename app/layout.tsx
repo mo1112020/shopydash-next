@@ -35,6 +35,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@shopydash",
     title: "شوبي داش | تسوق محلي سهل وسريع",
     description:
       "شوبي داش - منصة التسوق المحلية الأولى في المنطقة.",
@@ -57,19 +58,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} ${tajawal.variable}`}>
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              url: "https://www.shopydash.store",
-              logo: "https://www.shopydash.store/logo.png",
-            }),
-          }}
-        />
-      </head>
       <body>
         <Providers>{children}</Providers>
       </body>

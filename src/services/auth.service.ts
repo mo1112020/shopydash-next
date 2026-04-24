@@ -267,7 +267,7 @@ export const profileService = {
     }
 
     if (options?.regionId) {
-      query = query.eq("region_id", options.regionId);
+      query = (query as any).eq("region_id", options.regionId);
     }
 
     if (options?.search) {
