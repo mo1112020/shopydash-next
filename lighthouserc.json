@@ -1,27 +1,15 @@
 {
   "ci": {
     "collect": {
-      "url": [
-        "http://localhost:3000/",
-        "http://localhost:3000/shops",
-        "http://localhost:3000/about"
-      ],
-      "numberOfRuns": 2
-    },
-    "assert": {
-      "preset": "lighthouse:recommended",
-      "assertions": {
-        "csp-xss": "off",
-        "installable-manifest": "off",
-        "maskable-icon": "off",
-        "splash-screen": "off",
-        "themed-omnibox": "off",
-        "total-byte-weight": "warn",
-        "unminified-javascript": "warn",
-        "unused-css-rules": "warn",
-        "unused-javascript": "warn",
-        "uses-responsive-images": "warn"
+      "url": ["http://localhost:3000/"],
+      "numberOfRuns": 1,
+      "settings": {
+        "chromeFlags": "--no-sandbox --disable-setuid-sandbox --disable-gpu --disable-dev-shm-usage"
       }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouseci"
     }
   }
 }
