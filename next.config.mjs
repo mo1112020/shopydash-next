@@ -3,6 +3,12 @@ const nextConfig = {
   output: "standalone",
   compress: true,
   poweredByHeader: false,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days

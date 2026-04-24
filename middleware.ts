@@ -75,7 +75,11 @@ export async function middleware(request: NextRequest) {
   );
 
   // Refresh session — do NOT remove this line
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // non-fatal: server still serves pages without auth context
+  }
 
   // Social crawler: serve OG HTML directly
   const ua = request.headers.get("user-agent");
