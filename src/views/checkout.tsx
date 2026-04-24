@@ -68,6 +68,7 @@ export default function CheckoutPage() {
   const { isAuthenticated, user } = useAuth();
   const { cart, cartTotal, clearCart } = useCart();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // double-submit guard
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("delivery");
   const [locationData, setLocationData] = useState<LocationData>({
     address: "",
@@ -236,66 +237,66 @@ export default function CheckoutPage() {
   };
 
   const onSubmit = async (data: CheckoutForm) => {
+    // ── Double-submit guard ─────────────────────────────────────────────────
+    if (isSubmitting || isLoading) return;
+
     if (!cart || !cart.items || cart.items.length === 0) {
       notify.error("السلة فارغة");
       return;
     }
+
     setIsLoading(true);
+    setIsSubmitting(true);
     try {
       const { user: authUser } = await getCurrentUser();
       if (!authUser) {
         notify.error("يجب تسجيل الدخول");
         return;
       }
-      const uniqueShops = new Set(cart.items.map(item => item.product?.shop_id).filter(Boolean));
-      const isMultiShop = uniqueShops.size > 1 || cart.shop_id === null;
-      if (isMultiShop) {
-        const { calculateMultiStoreCheckout } = await import('@/services/multi-store-checkout.service');
-        const calculation = await calculateMultiStoreCheckout({
-          userId: authUser.id,
-          cartItems: cart.items as any,
-          deliveryAddress: locationData.address || data.address,
-          deliveryLatitude: locationData.lat || 0,
-          deliveryLongitude: locationData.lng || 0,
-          customerName: user?.full_name || authUser.email || "عميل",
-          customerPhone: data.phone,
-          notes: data.notes,
-        });
-        if (calculation.validation_errors.length > 0) {
-          notify.error(calculation.validation_errors[0]);
-          return;
-        }
-        if (calculation.is_fallback && calculation.fallback_warning) {
-          notify.warning(calculation.fallback_warning);
-        }
-        const result = await orderService.createMultiStoreOrder(calculation);
-        await clearCart();
-        notify.success(AR.checkout.success);
-        router.replace(`/orders/${result.parent_order_id}`);
-      } else {
-        const order = await orderService.create({
-          userId: authUser.id,
-          shopId: cart.shop_id || cart.items[0].product?.shop_id!,
-          customerName: user?.full_name || authUser.email || "عميل",
-          items: cart.items.map((item) => ({
-            productId: item.product_id,
-            productName: item.product?.name || "",
-            productPrice: item.product?.price || 0,
-            quantity: item.quantity,
-          })),
-          deliveryAddress: locationData.address || data.address,
-          deliveryPhone: data.phone,
-          notes: data.notes,
-          deliveryFee: deliveryFee || 0,
-        });
-        notify.success(AR.checkout.success);
-        router.replace(`/orders/${order.id}`);
+
+      const { calculateMultiStoreCheckout } = await import('@/services/multi-store-checkout.service');
+      const calculation = await calculateMultiStoreCheckout({
+        userId: authUser.id,
+        cartItems: cart.items as any,
+        deliveryAddress: locationData.address || data.address,
+        deliveryLatitude: locationData.lat || 0,
+        deliveryLongitude: locationData.lng || 0,
+        customerName: user?.full_name || authUser.email || "عميل",
+        customerPhone: data.phone,
+        notes: data.notes,
+      });
+
+      if (calculation.validation_errors.length > 0) {
+        notify.error(calculation.validation_errors[0]);
+        return;
       }
-    } catch (error) {
-      console.error(error);
-      notify.error("حدث خطأ أثناء إنشاء الطلب");
+
+      if (calculation.is_fallback && calculation.fallback_warning) {
+        notify.warning(calculation.fallback_warning);
+      }
+
+      const result = await orderService.createMultiStoreOrder(calculation);
+
+      // Clear cart in background — don't block navigation
+      clearCart().catch((e) => console.warn('[checkout] clearCart error (non-critical):', e));
+
+      notify.success(AR.checkout.success);
+      router.replace(`/orders/${result.parent_order_id}`);
+    } catch (error: any) {
+      console.error('[checkout] onSubmit error:', error);
+
+      // Surface specific error messages from RPC or validation
+      if (error.message?.startsWith('STOCK:')) {
+        notify.error(error.message.replace('STOCK: ', ''));
+      } else if (error.message?.startsWith('AUTH:')) {
+        notify.error("يجب تسجيل الدخول لإتمام الطلب");
+        router.push('/login?redirect=/checkout');
+      } else {
+        notify.error("حدث خطأ أثناء إنشاء الطلب. يرجى المحاولة مرة أخرى.");
+      }
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 

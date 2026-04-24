@@ -166,11 +166,17 @@ export function CartDropdown({ isOpen, onClose }: CartDropdownProps) {
         {/* Footer Actions */}
         {cartItemCount > 0 && (
           <div className="p-4 border-t bg-muted/10">
+            {/* Minimum Order Check */}
             {(() => {
-              const shopMinOrder =
-                (cart?.items?.[0]?.product?.shop as any)?.min_order_amount || 0;
-              const isBelowMinOrder = shopMinOrder > 0 && cartTotal < shopMinOrder;
-              const remainingAmount = shopMinOrder - cartTotal;
+              // Per-shop minimum order check
+              const byShop: Record<string, { shopName: string; minOrder: number; subtotal: number }> = {};
+              for (const item of cart?.items || []) {
+                const shop = item.product?.shop as any;
+                if (!shop?.id) continue;
+                if (!byShop[shop.id]) byShop[shop.id] = { shopName: shop.name || 'المتجر', minOrder: shop.min_order_amount || 0, subtotal: 0 };
+                byShop[shop.id].subtotal += (item.product?.price || 0) * item.quantity;
+              }
+              const violations = Object.values(byShop).filter(s => s.minOrder > 0 && s.subtotal < s.minOrder);
 
               return (
                 <div className="space-y-2 mb-4">
@@ -180,6 +186,7 @@ export function CartDropdown({ isOpen, onClose }: CartDropdownProps) {
                       <span className="font-bold">{formatPrice(cartSavings)}</span>
                     </div>
                   )}
+                  
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-sm">{AR.cart.total}</span>
                     <span className="font-bold text-lg text-primary">
@@ -187,42 +194,52 @@ export function CartDropdown({ isOpen, onClose }: CartDropdownProps) {
                       <span className="text-xs font-normal text-muted-foreground mr-1">+ التوصيل</span>
                     </span>
                   </div>
-                  {isBelowMinOrder ? (
-                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md text-amber-800 text-xs text-center">
-                      تحتاج إضافة منتجات بقيمة{" "}
-                      <strong>{formatPrice(remainingAmount)}</strong> للوصول للحد الأدنى (
-                      {formatPrice(shopMinOrder)})
+
+                  {violations.length > 0 ? (
+                    <div className="mt-2 space-y-1">
+                      {violations.map((v, i) => (
+                        <div key={i} className="p-2 bg-amber-50 border border-amber-200 rounded-md text-amber-800 text-xs text-right">
+                          <span className="font-semibold">{v.shopName}:</span>{' '}
+                          أضف <strong>{formatPrice(v.minOrder - v.subtotal)}</strong> للوصول للحد الأدنى ({formatPrice(v.minOrder)})
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground text-center">
-                      رسوم التوصيل تُحسب عند الدفع
+                       رسوم التوصيل تُحسب عند الدفع
                     </p>
                   )}
                 </div>
               );
             })()}
 
+            
             <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
+              <Button 
+                variant="outline" 
                 className="w-full"
                 onClick={() => {
-                  router.push("/cart");
+                  router.push('/cart');
                   onClose();
                 }}
               >
                 عرض السلة
               </Button>
-              <Button
+              <Button 
                 className="w-full"
                 onClick={() => {
-                  router.push("/checkout");
+                  router.push('/checkout');
                   onClose();
                 }}
                 disabled={(() => {
-                  const shopMinOrder =
-                    (cart?.items?.[0]?.product?.shop as any)?.min_order_amount || 0;
-                  return shopMinOrder > 0 && cartTotal < shopMinOrder;
+                   const byShop: Record<string, { minOrder: number; subtotal: number }> = {};
+                   for (const item of cart?.items || []) {
+                     const shop = item.product?.shop as any;
+                     if (!shop?.id) continue;
+                     if (!byShop[shop.id]) byShop[shop.id] = { minOrder: shop.min_order_amount || 0, subtotal: 0 };
+                     byShop[shop.id].subtotal += (item.product?.price || 0) * item.quantity;
+                   }
+                   return Object.values(byShop).some(s => s.minOrder > 0 && s.subtotal < s.minOrder);
                 })()}
               >
                 إتمام الطلب

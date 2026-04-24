@@ -12,6 +12,19 @@ import { deliverySettingsService } from "./delivery-settings.service";
 import type { CheckoutCalculation } from "./multi-store-checkout.service";
 import { calculateDiscountedPrice } from "@/lib/offer-helpers";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE FLAG — Safe migration toggle
+//
+// Set to TRUE only after you have:
+//   1. Run sql/optimized_order_rpc.sql in Supabase
+//   2. Manually verified the function exists:
+//      SELECT proname FROM pg_proc WHERE proname = 'create_multi_store_order_v2';
+//   3. Placed one real test order successfully
+//
+// Set to FALSE to instantly revert to the old sequential logic.
+// ─────────────────────────────────────────────────────────────────────────────
+const USE_RPC_CHECKOUT = true;
+
 // Cart Service
 export const cartService = {
   async getCart(userId: string): Promise<CartWithItems | null> {
@@ -379,11 +392,36 @@ export const orderService = {
   },
 
   /**
-   * Create multi-store order with authoritative Platform Fee calculation
+   * Create multi-store order.
+   *
+   * When USE_RPC_CHECKOUT = true  → uses optimized single-RPC path (fast, atomic)
+   * When USE_RPC_CHECKOUT = false → uses original sequential path (safe fallback)
+   *
+   * Automatic fallback: if the RPC fails for any reason, the old path runs instead.
    */
   async createMultiStoreOrder(
     calculation: CheckoutCalculation
   ): Promise<{ parent_order_id: string; order_number: string }> {
+
+    // ── Try the new RPC path if the feature flag is enabled ──────────────────
+    if (USE_RPC_CHECKOUT) {
+      try {
+        console.log('[checkout] Using optimized RPC checkout path');
+        const t0 = performance.now();
+        const result = await this._createMultiStoreOrderViaRPC(calculation);
+        console.log(`[checkout] RPC total checkout time: ${Math.round(performance.now() - t0)}ms`);
+        return result;
+      } catch (rpcError: any) {
+        // Stock and auth errors should surface directly — don't fall back
+        if (rpcError.message?.startsWith('STOCK:') || rpcError.message?.startsWith('AUTH:')) {
+          throw rpcError;
+        }
+        // For any other RPC error (network, schema, etc.) → fall back to old path
+        console.warn('[checkout] RPC failed, falling back to sequential path:', rpcError.message);
+      }
+    }
+
+    // ── Original sequential path (unchanged below this line) ─────────────────
     const { parent_order_data, suborders_data } = calculation;
 
     // 1. Re-calculate Platform Fee Authoritatively
@@ -506,6 +544,110 @@ export const orderService = {
     return {
       parent_order_id: parentOrder.id,
       order_number: orderNumber,
+    };
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // NEW: Optimized order creation via a single Supabase RPC call.
+  // This replaces 8–12 sequential API calls with ONE atomic DB transaction.
+  //
+  // ⚠️  DO NOT CALL THIS DIRECTLY from the UI.
+  //     It is called automatically by createMultiStoreOrder() when
+  //     USE_RPC_CHECKOUT = true.
+  // ─────────────────────────────────────────────────────────────────────────
+  async _createMultiStoreOrderViaRPC(
+    calculation: CheckoutCalculation
+  ): Promise<{ parent_order_id: string; order_number: string }> {
+    const { parent_order_data, suborders_data, delivery_fee_breakdown, route_plan } = calculation;
+
+    // Re-calculate platform fee authoritatively before sending
+    const settings = await deliverySettingsService.getSettings();
+    const totalSubtotal = suborders_data.reduce((sum: number, sub: any) => sum + sub.subtotal, 0);
+    const platformFeeRaw = settings.platform_fee_fixed + (totalSubtotal * settings.platform_fee_percent / 100);
+    const platformFee = Math.round(platformFeeRaw * 100) / 100;
+
+    // ── Validate payload before sending to RPC ──────────────────────────────
+    if (!parent_order_data.user_id) throw new Error('VALIDATION_ERROR: missing user_id');
+    if (!parent_order_data.customer_phone) throw new Error('VALIDATION_ERROR: missing phone');
+    if (!suborders_data || suborders_data.length === 0) throw new Error('VALIDATION_ERROR: no suborders');
+
+    for (const sub of suborders_data) {
+      if (!sub.shop_id) throw new Error('VALIDATION_ERROR: suborder missing shop_id');
+      if (!sub.items || sub.items.length === 0) throw new Error('VALIDATION_ERROR: suborder has no items');
+      for (const item of sub.items) {
+        if (!item.product_id) throw new Error('VALIDATION_ERROR: item missing product_id');
+        if (!item.quantity || item.quantity <= 0) throw new Error('VALIDATION_ERROR: item has invalid quantity');
+        if (!item.unit_price || item.unit_price < 0) throw new Error('VALIDATION_ERROR: item has invalid price');
+      }
+    }
+
+    // ── Build clean suborders payload ───────────────────────────────────────
+    const subordersPayload = suborders_data.map((sub: any) => ({
+      shop_id: sub.shop_id,
+      subtotal: sub.subtotal,
+      pickup_sequence_index: sub.pickup_sequence_index ?? 0,
+      items: sub.items.map((item: any) => ({
+        product_id:    item.product_id,
+        product_name:  item.product_name,
+        product_image: item.product_image ?? null,
+        quantity:      item.quantity,
+        unit_price:    item.unit_price,
+        total_price:   item.total_price,
+      })),
+    }));
+
+    const t0 = performance.now();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('create_multi_store_order_v2', {
+      p_user_id:                    parent_order_data.user_id,
+      p_customer_name:              parent_order_data.customer_name,
+      p_customer_phone:             parent_order_data.customer_phone,
+      p_delivery_address:           parent_order_data.delivery_address,
+      p_delivery_latitude:          parent_order_data.delivery_latitude   ?? 0,
+      p_delivery_longitude:         parent_order_data.delivery_longitude  ?? 0,
+      p_delivery_notes:             parent_order_data.delivery_notes      ?? null,
+      p_payment_method:             'COD',
+      p_total_subtotal:             totalSubtotal,
+      p_delivery_fee:               parent_order_data.total_delivery_fee  ?? 0,
+      p_platform_fee:               platformFee,
+      p_route_km:                   route_plan?.total_km                  ?? 0,
+      p_route_minutes:              route_plan?.total_minutes             ?? 0,
+      p_pickup_sequence:            parent_order_data.pickup_sequence     ?? [],
+      p_delivery_fee_breakdown:     delivery_fee_breakdown                ?? {},
+      p_delivery_settings_snapshot: parent_order_data.delivery_settings_snapshot ?? {},
+      p_suborders:                  subordersPayload,
+    });
+
+    const elapsed = Math.round(performance.now() - t0);
+    console.log(`[checkout:rpc] create_multi_store_order_v2 completed in ${elapsed}ms`);
+
+    if (error) {
+      console.error('[checkout:rpc] RPC error:', error);
+
+      // Surface human-friendly stock errors
+      if (error.message?.includes('STOCK_ERROR')) {
+        const match = error.message.match(/المنتج "(.+?)"/);
+        const productName = match?.[1] ?? 'أحد المنتجات';
+        throw new Error(`STOCK: المنتج "${productName}" غير متوفر بالكمية المطلوبة`);
+      }
+
+      if (error.message?.includes('AUTH_ERROR')) {
+        throw new Error('AUTH: يجب تسجيل الدخول لإنشاء طلب');
+      }
+
+      throw new Error(`RPC_FAILED: ${error.message}`);
+    }
+
+    const rpcResult = data as unknown as { success: boolean; parent_order_id: string; order_number: string };
+
+    if (!rpcResult?.success) {
+      throw new Error('RPC_FAILED: لم يتم إنشاء الطلب');
+    }
+
+    return {
+      parent_order_id: rpcResult.parent_order_id,
+      order_number:    rpcResult.order_number,
     };
   },
 
