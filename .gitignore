@@ -35,7 +35,6 @@ node_modules
 lighthouse.txt
 lighthouse_latest.txt
 lighthouse-login.cjs
-lighthouserc.json
 
 # Generated images / AI tool folders
 vibe_images/
