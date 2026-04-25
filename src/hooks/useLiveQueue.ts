@@ -2,11 +2,16 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Order } from "@/types/database";
 
-export function useLiveQueue() {
+export function useLiveQueue(enabled: boolean = true) {
   const [orders, setOrders] = useState<any[]>([]); // Using any[] to support ParentOrder structure
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
+
     // 1. Initial Fetch
     const fetchOrders = async () => {
       const { data, error } = await supabase
@@ -72,7 +77,7 @@ export function useLiveQueue() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [enabled]);
 
   return { orders, isLoading };
 }

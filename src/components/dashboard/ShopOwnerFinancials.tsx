@@ -8,17 +8,25 @@ import { analyticsService, DetailedFinancialReport } from "@/services/analytics.
 import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/store";
 import { shopsService } from "@/services/catalog.service";
+import { useQuery } from "@tanstack/react-query";
 
 export function ShopOwnerFinancials() {
   const { user } = useAuth();
   const [report, setReport] = useState<DetailedFinancialReport | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingFinancials, setIsLoadingFinancials] = useState(true);
+  const { data: shop, isLoading: isShopLoading } = useQuery({
+    queryKey: ["shop", "owner", user?.id],
+    queryFn: () => user?.id ? shopsService.getByOwnerId(user.id) : Promise.resolve(null),
+    enabled: !!user,
+  });
+
+  const isLoading = isShopLoading || isLoadingFinancials;
 
   useEffect(() => {
     const loadFinancials = async () => {
-      if (!user) return;
+      if (!user || !shop) return;
+      setIsLoadingFinancials(true);
       try {
-        const shop = await shopsService.getByOwnerId(user.id);
         if (shop && shop.approval_status === "APPROVED") {
           const data = await analyticsService.getShopDetailedFinancialReport(shop.id);
           setReport(data);
@@ -26,11 +34,11 @@ export function ShopOwnerFinancials() {
       } catch (error) {
         console.error("Failed to load financials:", error);
       } finally {
-        setIsLoading(false);
+        setIsLoadingFinancials(false);
       }
     };
-    loadFinancials();
-  }, [user]);
+    if (shop) loadFinancials();
+  }, [shop]);
 
   if (isLoading) {
     return (

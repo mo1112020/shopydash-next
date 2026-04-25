@@ -65,7 +65,7 @@ const STEPS: { id: CheckoutStep; label: string; icon: React.ElementType }[] = [
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
   const { cart, cartTotal, clearCart } = useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); // double-submit guard
@@ -300,7 +300,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthLoading && !isAuthenticated) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center py-16 px-4">
         <div className="text-center max-w-sm">

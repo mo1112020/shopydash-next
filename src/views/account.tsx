@@ -64,7 +64,7 @@ const LABEL_ICONS: Record<string, React.ElementType> = {
 };
 
 export default function AccountPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [addresses, setAddresses] = useState<AddressWithDistrict[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -163,7 +163,7 @@ export default function AccountPage() {
     return LABEL_ICONS[label] || LABEL_ICONS.default;
   };
 
-  if (!isAuthenticated || !user) {
+  if (!isAuthLoading && (!isAuthenticated || !user)) {
     return (
       <div className="py-16">
         <div className="container-app text-center">

@@ -41,6 +41,7 @@ import { formatPrice, cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -360,8 +361,15 @@ function OrderDetailsDialog({ order, open, onOpenChange }: any) {
 export function ShopOrders() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
-  const [shop, setShop] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+
+  const { data: shop, isLoading: isShopLoading } = useQuery({
+    queryKey: ["shop", "owner", user?.id],
+    queryFn: () => user?.id ? shopsService.getByOwnerId(user.id) : Promise.resolve(null),
+    enabled: !!user,
+  });
+
+  const isLoading = isShopLoading || isLoadingOrders;
 
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
@@ -398,24 +406,20 @@ export function ShopOrders() {
   };
 
   const loadData = async (silent = false) => {
-    if (!user) return;
-    if (!silent) setIsLoading(true);
+    if (!user || !shop) return;
+    if (!silent) setIsLoadingOrders(true);
     try {
-      const userShop = await shopsService.getByOwnerId(user.id);
-      setShop(userShop);
-      if (userShop) {
-        const shopOrders = await orderService.getShopOrdersEnhanced(userShop.id);
-        setOrders(shopOrders);
-      }
+      const shopOrders = await orderService.getShopOrdersEnhanced(shop.id);
+      setOrders(shopOrders);
     } catch (error) {
       console.error("Failed to load orders:", error);
       toast({ title: "خطأ", description: "فشل تحميل الطلبات", variant: "destructive" });
     } finally {
-      if (!silent) setIsLoading(false);
+      if (!silent) setIsLoadingOrders(false);
     }
   };
 
-  useEffect(() => { loadData(); }, [user]);
+  useEffect(() => { if (shop) loadData(); }, [shop]);
 
   useShopRealtime(shop?.id, () => loadData(true), () => loadData(true));
 

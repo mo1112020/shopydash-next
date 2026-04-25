@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Package,
   ShoppingBag,
@@ -31,8 +31,8 @@ import {
 import { AR } from "@/lib/i18n";
 import { formatPrice, cn } from "@/lib/utils";
 import { useAuth } from "@/store";
-import { orderService, ORDER_STATUS_CONFIG } from "@/services";
-import { getCurrentUser } from "@/lib/supabase";
+import { orderService, ORDER_STATUS_CONFIG } from "@/services/order.service";
+import { supabase, getCurrentUser } from "@/lib/supabase";
 import type { OrderStatus, OrderWithItems } from "@/types/database";
 
 const statusVariantMap: Record<
@@ -68,10 +68,36 @@ const statusIcons: Record<OrderStatus, typeof Package> = {
 };
 
 export default function OrdersPage() {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 6;
+  const queryClient = useQueryClient();
+
+  // Real-time Subscription for user's orders
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`user-orders-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 
   const {
     data,
@@ -79,13 +105,13 @@ export default function OrdersPage() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["orders", currentPage],
+    queryKey: ["orders", currentPage, user?.id],
     queryFn: async () => {
-      const { user } = await getCurrentUser();
-      if (!user) return { data: [], count: 0 };
+      if (!user?.id) return { data: [], count: 0 };
       return orderService.getByUser(user.id, currentPage, pageSize);
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !!user,
+    staleTime: 1000 * 30, // 30 seconds
   });
 
   const orders = data?.data || [];
@@ -127,7 +153,7 @@ export default function OrdersPage() {
     return progressMap[status];
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthLoading && !isAuthenticated) {
     return (
       <div className="py-16">
         <div className="container-app text-center">

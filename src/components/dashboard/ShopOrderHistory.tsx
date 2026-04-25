@@ -45,6 +45,7 @@ import { formatPrice, cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -306,8 +307,15 @@ function OrderRow({ order, isExpanded, onToggle }: { order: any; isExpanded: boo
 export function ShopOrderHistory() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
-  const [shop, setShop] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+
+  const { data: shop, isLoading: isShopLoading } = useQuery({
+    queryKey: ["shop", "owner", user?.id],
+    queryFn: () => user?.id ? shopsService.getByOwnerId(user.id) : Promise.resolve(null),
+    enabled: !!user,
+  });
+
+  const isLoading = isShopLoading || isLoadingOrders;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -320,24 +328,20 @@ export function ShopOrderHistory() {
 
   useEffect(() => {
     const load = async () => {
-      if (!user) return;
-      setIsLoading(true);
+      if (!user || !shop) return;
+      setIsLoadingOrders(true);
       try {
-        const userShop = await shopsService.getByOwnerId(user.id);
-        setShop(userShop);
-        if (userShop) {
-          const shopOrders = await orderService.getShopOrdersEnhanced(userShop.id);
-          setOrders(shopOrders);
-        }
+        const shopOrders = await orderService.getShopOrdersEnhanced(shop.id);
+        setOrders(shopOrders);
       } catch (error) {
         console.error("Failed to load order history:", error);
         toast({ title: "خطأ", description: "فشل تحميل السجل", variant: "destructive" });
       } finally {
-        setIsLoading(false);
+        setIsLoadingOrders(false);
       }
     };
-    load();
-  }, [user]);
+    if (shop) load();
+  }, [shop]);
 
   // Pre-compute all history orders + order dates map for calendar
   const historyOrders = useMemo(() => {

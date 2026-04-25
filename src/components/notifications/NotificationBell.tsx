@@ -30,7 +30,7 @@ export function NotificationBell() {
   // ------------------------------------------------------
   // ROLE: DELIVERY (LIVE QUEUE)
   // ------------------------------------------------------
-  const { orders: liveQueue } = useLiveQueue();
+  const { orders: liveQueue } = useLiveQueue(user?.role === 'DELIVERY');
   
   // ------------------------------------------------------
   // ROLE: SHOP OWNER (STORED NOTIFICATIONS)

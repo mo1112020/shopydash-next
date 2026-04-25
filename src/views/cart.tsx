@@ -23,7 +23,7 @@ import { useCart, useAuth } from "@/store";
 import { useMemo, useState, useRef, useCallback } from "react";
 
 export default function CartPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { cart, cartTotal, updateCartItem, removeFromCart } = useCart();
 
   // Debounce refs for quantity updates
@@ -98,7 +98,7 @@ export default function CartPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthLoading && !isAuthenticated) {
     return (
       <div className="py-16">
         <div className="container-app text-center">

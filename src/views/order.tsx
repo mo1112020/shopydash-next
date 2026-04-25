@@ -203,7 +203,7 @@ function OrderTracker({
 
 export default function OrderPage() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   const { data: orderData, isLoading } = useQuery({
     queryKey: ["order", id],
@@ -319,7 +319,7 @@ export default function OrderPage() {
     );
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthLoading && !isAuthenticated) {
     return (
       <div className="py-16">
         <div className="container-app text-center">
@@ -377,7 +377,16 @@ export default function OrderPage() {
   // Render Parent Order View
   // ═══════════════════════════════════════════════════════════════════
   if (orderData.type === 'parent') {
-    const order = orderData.data;
+    const order = orderData?.data;
+
+    if (!order) {
+      return (
+        <div className="py-16 text-center">
+          <h2 className="text-xl font-semibold text-muted-foreground">تعذر تحميل بيانات الطلب الرئيسي</h2>
+        </div>
+      );
+    }
+
     const isCancelled = order.status === 'CANCELLED';
     const activeSuborders = order.suborders.filter(s => s.status !== 'CANCELLED');
     const allDelivered = activeSuborders.length > 0 && activeSuborders.every(s => s.status === 'DELIVERED');
@@ -601,8 +610,18 @@ export default function OrderPage() {
   // ═══════════════════════════════════════════════════════════════════
   // Render Single Order View
   // ═══════════════════════════════════════════════════════════════════
-  const order = orderData.data as OrderWithItems;
+  const order = orderData?.data as OrderWithItems | undefined;
+
+  if (!order) {
+    return (
+      <div className="py-16 text-center">
+        <h2 className="text-xl font-semibold text-muted-foreground">تعذر تحميل بيانات الطلب</h2>
+      </div>
+    );
+  }
+
   const currentStatusIndex = statusOrder.indexOf(order.status as OrderStatus);
+
   const isCancelled = order.status === "CANCELLED" || order.status === "CANCELLED_BY_SHOP" || order.status === "CANCELLED_BY_ADMIN";
   const isDelivered = order.status === "DELIVERED";
   const isActive = !isCancelled && !isDelivered;

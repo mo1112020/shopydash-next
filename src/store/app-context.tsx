@@ -143,34 +143,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [limitErrorModal, setLimitErrorModal] = useState<{isOpen: boolean, message: string}>({isOpen: false, message: ''});
 
   // Initialize auth state
+  // Initialize auth state
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const { user } = await getCurrentUser();
-        if (user) {
-          const profile = await authService.getProfile(user.id);
-          dispatch({ type: "SET_USER", payload: profile });
-
-          // Load cart if authenticated
-          if (profile) {
-            const cart = await cartService.getCart(user.id);
-            dispatch({ type: "SET_CART", payload: cart });
-          }
-        } else {
-          dispatch({ type: "SET_USER", payload: null });
-        }
-      } catch {
-        dispatch({ type: "SET_USER", payload: null });
-      }
-    };
-
-    initAuth();
-
     // Listen to auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
+      if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session?.user) {
         // Don't await - let it run in background
         authService
           .getProfile(session.user.id)
@@ -187,12 +166,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           })
           .catch((error) => {
             console.error("Profile fetch error:", error);
+            dispatch({ type: "SET_USER", payload: null });
           });
+      } else if (event === "INITIAL_SESSION" && !session?.user) {
+        dispatch({ type: "SET_USER", payload: null });
       } else if (event === "SIGNED_OUT") {
         dispatch({ type: "LOGOUT" });
       } else if (event === "USER_UPDATED" && !session) {
-          // Handle cases where session is lost but event fires
-          dispatch({ type: "LOGOUT" });
+        // Handle cases where session is lost but event fires
+        dispatch({ type: "LOGOUT" });
       }
     });
 

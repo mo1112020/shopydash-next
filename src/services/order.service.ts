@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase, getCurrentUser } from "@/lib/supabase";
 import type {
   CartItem,
   CartWithItems,
@@ -908,7 +908,7 @@ export const orderService = {
     }
 
     // Get current user ID
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getCurrentUser();
     if (!user) throw new Error("يجب تسجيل الدخول لإلغاء الطلب");
 
     const status = actor === 'SHOP' ? 'CANCELLED_BY_SHOP' : 'CANCELLED_BY_ADMIN';

@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase, getCurrentUser } from "@/lib/supabase";
 import { shopsService } from './catalog.service';
 
 export interface GlobalMetrics {
@@ -293,7 +293,7 @@ export const analyticsService = {
   // --- LEDGER & SETTINGS ENTRY METHODS ---
 
   async updateShopFinancialSettings(shopId: string, settings: { commission_percentage?: number, subscription_fee?: number, financial_start_date?: string, billing_cycle_start_date?: string, auto_bill_subscription?: boolean }): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getCurrentUser();
     
     // Check if exists
     const { data: existing } = await supabase.from('shop_financial_settings' as any).select('shop_id').eq('shop_id', shopId).maybeSingle();
@@ -317,7 +317,7 @@ export const analyticsService = {
   },
 
   async updateDriverFinancialSettings(driverId: string, settings: any): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getCurrentUser();
     
     // Check if exists
     const { data: existing } = await supabase.from('driver_financial_settings' as any).select('driver_id').eq('driver_id', driverId).maybeSingle();
@@ -341,7 +341,7 @@ export const analyticsService = {
   },
 
   async insertCommissionPayment(shopId: string, amount: number, notes?: string): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const { error } = await supabase.from('commission_payments' as any).insert([{
       shop_id: shopId, amount, notes, created_by_admin: user.id
@@ -350,7 +350,7 @@ export const analyticsService = {
   },
 
   async insertSubscriptionCharge(shopId: string, amount: number, billingMonth: string, notes?: string): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     // Postgres DATE column requires full date — convert "2026-03" → "2026-03-01"
     const billingDate = billingMonth.length === 7 ? `${billingMonth}-01` : billingMonth;
@@ -366,7 +366,7 @@ export const analyticsService = {
   },
 
   async insertPremiumSubscription(shopId: string, amount: number, startDate: string, endDate: string, paymentDate?: string, notes?: string): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     
     // 1. Insert into ledger
@@ -385,7 +385,7 @@ export const analyticsService = {
   },
 
   async insertDriverPayment(driverId: string, amount: number, notes?: string): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
     const { error } = await supabase.from('driver_payments' as any).insert([{
       driver_id: driverId, amount, notes, created_by_admin: user.id

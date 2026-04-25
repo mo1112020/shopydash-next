@@ -18,7 +18,8 @@ export default async function Page({ params }: Props) {
   await queryClient.prefetchQuery({
     queryKey: ["order", params.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1. Try single/sub order
+      const { data: singleData, error: singleError } = await supabase
         .from("orders")
         .select(
           `*,
@@ -30,8 +31,40 @@ export default async function Page({ params }: Props) {
         .eq("id", params.id)
         .maybeSingle();
 
-      if (error) return null;
-      return data;
+      if (!singleError && singleData) {
+        return { type: 'single' as const, data: singleData };
+      }
+
+      // 2. Try parent order
+      const { data: parentData, error: parentError } = await supabase
+        .from("parent_orders")
+        .select("*")
+        .eq("id", params.id)
+        .maybeSingle();
+
+      if (parentError || !parentData) return null;
+
+      const { data: suborders } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          shop:shops(id, name, slug, logo_url, phone, address, latitude, longitude),
+          items:order_items(*),
+          status_history:order_status_history(*)
+        `)
+        .eq("parent_order_id", params.id)
+        .neq("status", "CANCELLED")
+        .neq("status", "CANCELLED_BY_SHOP")
+        .neq("status", "CANCELLED_BY_ADMIN")
+        .order("created_at", { ascending: true });
+
+      return {
+        type: 'parent' as const,
+        data: {
+          ...parentData,
+          suborders: suborders || [],
+        }
+      };
     },
   });
 

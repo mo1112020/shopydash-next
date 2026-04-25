@@ -14,9 +14,9 @@ export default async function Page() {
   const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
-    queryKey: ["orders", 1],
+    queryKey: ["orders", 1, user.id],
     queryFn: async () => {
-      const pageSize = 10;
+      const pageSize = 6;
       const { data, error, count } = await supabase
         .from("orders")
         .select(

@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 
 // =====================================================
@@ -13,7 +13,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error("Missing Supabase environment variables");
 }
 
-export const supabase = createClient<Database>(
+export const supabase = createBrowserClient<Database>(
   SUPABASE_URL || "",
   SUPABASE_ANON_KEY || ""
 );
@@ -98,10 +98,10 @@ export const resetPassword = async (newPassword: string) => {
 
 export const getCurrentUser = async () => {
   const {
-    data: { user },
+    data: { session },
     error,
-  } = await supabase.auth.getUser();
-  return { user, error };
+  } = await supabase.auth.getSession();
+  return { user: session?.user || null, error };
 };
 
 export const getSession = async () => {
