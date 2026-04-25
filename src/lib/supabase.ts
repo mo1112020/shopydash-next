@@ -15,7 +15,16 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 export const supabase = createBrowserClient<Database>(
   SUPABASE_URL || "",
-  SUPABASE_ANON_KEY || ""
+  SUPABASE_ANON_KEY || "",
+  {
+    cookieOptions: {
+      domain: typeof window !== "undefined" && window.location.hostname.includes("shopydash.store") 
+        ? ".shopydash.store" 
+        : "localhost",
+      path: "/",
+      sameSite: "Lax",
+    }
+  }
 );
 
 // Check if Supabase is configured

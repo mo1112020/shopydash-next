@@ -53,6 +53,22 @@ export async function middleware(request: NextRequest) {
   // Always refresh the auth session so server components can read it
   let supabaseResponse = NextResponse.next({ request });
 
+  // Handle subdomain routing
+  const host = request.headers.get("host");
+  const url = request.nextUrl;
+  
+  // Check if we are on the dashboard subdomain
+  if (host === "dashboard.shopydash.store" || host === "dashboard.localhost:3000") {
+    const isAuthOrApiRoute = url.pathname.match(/^\/(login|register|forgot-password|reset-password|auth|api|favicon\.ico|_next)/);
+    
+    // If the path doesn't already start with /dashboard, and it's not an auth/api route, rewrite it internally
+    if (!url.pathname.startsWith("/dashboard") && !isAuthOrApiRoute) {
+      // If it's just "/", rewrite to "/dashboard". If it's "/orders", rewrite to "/dashboard/orders"
+      url.pathname = `/dashboard${url.pathname === "/" ? "" : url.pathname}`;
+      supabaseResponse = NextResponse.rewrite(url);
+    }
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -62,12 +78,26 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
+          const cookieDomain = host?.includes("shopydash.store") ? ".shopydash.store" : "localhost";
+
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
+          
+          // Recreate response so it has the updated request cookies if needed
+          // (Usually Next.js requires this pattern for middleware)
           supabaseResponse = NextResponse.next({ request });
+          
+          // Apply the rewrite again because creating a new NextResponse.next() erases the rewrite!
+          if (host === "dashboard.shopydash.store" || host === "dashboard.localhost:3000") {
+            const isAuthOrApiRoute = url.pathname.match(/^\/(login|register|forgot-password|reset-password|auth|api|favicon\.ico|_next)/);
+            if (!url.pathname.startsWith("/dashboard") && !isAuthOrApiRoute) {
+              supabaseResponse = NextResponse.rewrite(url);
+            }
+          }
+          
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, { ...options, domain: cookieDomain })
           );
         },
       },

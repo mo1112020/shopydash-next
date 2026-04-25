@@ -4547,7 +4547,7 @@ export default function DashboardPage() {
   const navItems = isDelivery ? deliveryNav : isAdmin ? adminNav : shopOwnerNav;
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="bg-muted/30">
       <div className="container-app py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Mobile Header overlay */}
